@@ -124,44 +124,35 @@ function draw() {
   mat4.multiply(viewMatrix, projectionMatrix, viewMatrix);
   mat4.invert(viewMatrix, viewMatrix);
 
-  //mat4.rotate(vec.world, vec.world, Math.PI, [1, 0, 0]);
-  //mat4.rotate(vec.world, vec.world, -Math.PI / 2, [0, 1, 0]);
+  this.mat4 = mat4.create();
+  mat4.rotate(this.mat4, this.mat4, Math.PI / 2, [0, 0, 1]);
+  const vecs = [];
+  v.forEach((vv) => {
+    const t = [mat4.create(), mat4.create(), mat4.create()];
+    mat4.rotate(t[0], this.mat4, Math.atan2(-vv.y, vv.x), [0, 0, 1]);
+    mat4.rotate(t[0], t[0], Math.atan2(-vv.z, vv.x), [1, 0, 0]);
 
-  mat4.multiply(vec.modelViewMatrix, vec.modelViewMatrix, vec.world);
-  mat4.invert(vec.normal, vec.world);
-  mat4.transpose(vec.normal, vec.normal);
+    mat4.multiply(t[1], vec.modelViewMatrix, t[0]);
+    mat4.invert(t[2], t[0]);
+    mat4.transpose(t[2], t[2]);
+
+    vecs.push(t);
+  })
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  v.forEach((vv) => {
-    vv.draw(vec);
+  v.forEach((vv, i) => {
+    vv.draw(vecs[i]);
   })
 }
 
 class Vector {
   constructor(x, y, z, rgba=[1, 0.8, 0.8, 1]) {
-    this.xyz = [x, y, z];
-    this.mat4 = mat4.create();
-    mat4.rotate(this.mat4, this.mat4, Math.PI / 2, [0, 0, 1]);
-    mat4.rotate(this.mat4, this.mat4, Math.atan2(-y, x), [0, 0, 1]);
-    mat4.rotate(this.mat4, this.mat4, Math.atan2(-z, x), [1, 0, 0]);
-    const ap = new Float32Array(vecData.pos);
-    const an = new Float32Array(vecData.norm);
-    for (let i = 0; i < ap.length; i += 3) {
-      let t = vec3.create();
-      vec3.transformMat4(t, [ap[i], ap[i + 1], ap[i + 2]], this.mat4)
-      ap[i] = t[0];
-      ap[i + 1] = t[1];
-      ap[i + 2] = t[2];
-      vec3.transformMat4(t, [an[i], an[i + 1], an[i + 2]], this.mat4)
-      an[i] = t[0];
-      an[i + 1] = t[1];
-      an[i + 2] = t[2];
-    }
-    this.vert = ap;
-    this.normal = an;
+    this.x = x; this.y = y; this.z = z;
+    this.vert = vecData.pos;
+    this.normal = vecData.norm;
     this.posOrder = vecData.posOrder;
     this.rgba = rgba;
 
@@ -252,9 +243,9 @@ void main() {
   draw(data) {
     gl.useProgram(this.program);
 
-    gl.uniformMatrix4fv(this.model, false, data.modelViewMatrix);
-    gl.uniformMatrix4fv(this.world, false, data.world);
-    gl.uniformMatrix4fv(this.normal, false, data.normal);
+    gl.uniformMatrix4fv(this.world, false, data[0]);
+    gl.uniformMatrix4fv(this.model, false, data[1]);
+    gl.uniformMatrix4fv(this.normal, false, data[2]);
     gl.uniform3fv(this.cam, camera);
     gl.uniform4fv(this.col, this.rgba);
     
