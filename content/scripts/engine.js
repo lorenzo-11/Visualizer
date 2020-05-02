@@ -74,9 +74,12 @@ function main() {
   }, 10);
 
   v = [
+    new Vector(0, 0, 1, [0, 0, 1, 1]),
+    new Vector(0, 0, -1, [0, 0, 1, 1]),
     new Vector(1, 0, 0, [0, 0, 1, 1]),
-    new Vector(0, 1, 0, [1, 0, 0, 1]),
-    new Vector(0, 0, 1, [0, 1, 0, 1])
+    new Vector(-1, 0, 0, [0, 0, 1, 1]),
+    new Vector(0, 1, 0, [0, 0, 1, 1]),
+    new Vector(0, -1, 0, [0, 0, 1, 1])
   ]
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -124,13 +127,18 @@ function draw() {
   mat4.multiply(viewMatrix, projectionMatrix, viewMatrix);
   mat4.invert(viewMatrix, viewMatrix);
 
-  this.mat4 = mat4.create();
-  mat4.rotate(this.mat4, this.mat4, Math.PI / 2, [0, 0, 1]);
+  const m = mat4.create();
   const vecs = [];
   v.forEach((vv) => {
     const t = [mat4.create(), mat4.create(), mat4.create()];
-    mat4.rotate(t[0], this.mat4, Math.atan2(-vv.y, vv.x), [0, 0, 1]);
-    mat4.rotate(t[0], t[0], Math.atan2(-vv.z, vv.x), [1, 0, 0]);
+    const p = vec3.create();
+    vec3.normalize(p, [vv.x, vv.y, vv.z]);
+    const a =  Math.acos(p[1]);
+    vec3.cross(p, p, [0, 1, 0]);
+    vec3.normalize(p, p);
+
+    mat4.rotate(t[0], m, a, p);
+    mat4.scale(t[0], t[0], [1, vv.m, 1]);
 
     mat4.multiply(t[1], vec.modelViewMatrix, t[0]);
     mat4.invert(t[2], t[0]);
@@ -150,7 +158,11 @@ function draw() {
 
 class Vector {
   constructor(x, y, z, rgba=[1, 0.8, 0.8, 1]) {
+    if (y < 0 && x === 0 && z === 0) {
+      x = 0.0000000000000001; // prevent parallel vectors
+    }
     this.x = x; this.y = y; this.z = z;
+    this.m = Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2) + Math.pow(this.z, 2));
     this.vert = vecData.pos;
     this.normal = vecData.norm;
     this.posOrder = vecData.posOrder;
