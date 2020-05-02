@@ -1,4 +1,4 @@
-var gl, iid = -1, v, ccc = [-1.91, 1.09];
+var gl, iid = -1, v, ccc = [0, 0];
 const mat4 = glMatrix.mat4, vec3 = glMatrix.vec3, vec2 = glMatrix.vec2;
 function init() {
   let count = 0;
@@ -44,10 +44,10 @@ function main() {
   window.dispatchEvent(new Event('resize'));
 
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   gl.enable(gl.DEPTH_TEST);
   gl.enable(gl.BLEND);
   //gl.enable(gl.CULL_FACE);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   var bool = false, x = 0, y = 0, ax = 0, ay = 0, cccc = [0, 0];
@@ -73,7 +73,11 @@ function main() {
     zoom += (zm - zoom) / 20;
   }, 10);
 
-  v = new Vector(0, 0, 1, [0, 0, 1, 1]);
+  v = [
+    new Vector(1, 0, 0, [0, 0, 1, 1]),
+    new Vector(0, 1, 0, [1, 0, 0, 1]),
+    new Vector(0, 0, 1, [0, 1, 0, 1])
+  ]
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
@@ -131,14 +135,33 @@ function draw() {
   gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  v.draw(vec);
+  v.forEach((vv) => {
+    vv.draw(vec);
+  })
 }
 
 class Vector {
   constructor(x, y, z, rgba=[1, 0.8, 0.8, 1]) {
     this.xyz = [x, y, z];
-    this.vert = vecData.pos;
-    this.normal = vecData.norm;
+    this.mat4 = mat4.create();
+    mat4.rotate(this.mat4, this.mat4, Math.PI / 2, [0, 0, 1]);
+    mat4.rotate(this.mat4, this.mat4, Math.atan2(-y, x), [0, 0, 1]);
+    mat4.rotate(this.mat4, this.mat4, Math.atan2(-z, x), [1, 0, 0]);
+    const ap = new Float32Array(vecData.pos);
+    const an = new Float32Array(vecData.norm);
+    for (let i = 0; i < ap.length; i += 3) {
+      let t = vec3.create();
+      vec3.transformMat4(t, [ap[i], ap[i + 1], ap[i + 2]], this.mat4)
+      ap[i] = t[0];
+      ap[i + 1] = t[1];
+      ap[i + 2] = t[2];
+      vec3.transformMat4(t, [an[i], an[i + 1], an[i + 2]], this.mat4)
+      an[i] = t[0];
+      an[i + 1] = t[1];
+      an[i + 2] = t[2];
+    }
+    this.vert = ap;
+    this.normal = an;
     this.posOrder = vecData.posOrder;
     this.rgba = rgba;
 
@@ -168,13 +191,14 @@ const float shininess = 70.0;
 const float screenGamma = 2.2;
 
 uniform vec3 cam;
+uniform vec4 color;
 
 varying vec3 vert;
 varying vec3 normalInterp;
 
 void main() {
   vec3 lightPos = normalize(cam) * 5.0;
-  vec3 diffuseColor =  vec3(1.0, 0.0, 0.0), ambientColor = diffuseColor / 20.0;
+  vec3 diffuseColor =  color.rgb, ambientColor = diffuseColor / 20.0;
   vec3 normal = normalize(normalInterp);
   vec3 colorGammaCorrected = vec3(0.0);
 
@@ -194,7 +218,7 @@ void main() {
       colorLinear += specColor * specular * lightColor * lightPower / distance;
   }
   colorGammaCorrected = pow(colorLinear, vec3(1.0/screenGamma));
-  gl_FragColor = vec4(colorGammaCorrected, 1.0);
+  gl_FragColor = vec4(colorGammaCorrected, color.a);
 }
 `));
 
@@ -220,6 +244,7 @@ void main() {
     this.world = gl.getUniformLocation(this.program, 'world');
     this.normal = gl.getUniformLocation(this.program, 'normal');
     this.cam = gl.getUniformLocation(this.program, 'cam');
+    this.col = gl.getUniformLocation(this.program, 'color');
     this.pos = gl.getAttribLocation(this.program, 'pos');
     this.nor = gl.getAttribLocation(this.program, 'nor');
   }
@@ -231,6 +256,7 @@ void main() {
     gl.uniformMatrix4fv(this.world, false, data.world);
     gl.uniformMatrix4fv(this.normal, false, data.normal);
     gl.uniform3fv(this.cam, camera);
+    gl.uniform4fv(this.col, this.rgba);
     
     gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
     gl.enableVertexAttribArray(this.pos);
