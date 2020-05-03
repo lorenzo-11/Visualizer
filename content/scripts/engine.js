@@ -74,12 +74,9 @@ function main() {
   }, 10);
 
   v = [
-    new Vector(0, 0, 1, [0, 0, 1, 1]),
-    new Vector(0, 0, -1, [0, 0, 1, 1]),
     new Vector(1, 0, 0, [0, 0, 1, 1]),
-    new Vector(-1, 0, 0, [0, 0, 1, 1]),
-    new Vector(0, 1, 0, [0, 0, 1, 1]),
-    new Vector(0, -1, 0, [0, 0, 1, 1])
+    new Vector(0, 1, 0, [1, 0, 0, 1]),
+    new Vector(0, 0, 1, [0, 1, 0, 1])
   ]
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -158,11 +155,7 @@ function draw() {
 
 class Vector {
   constructor(x, y, z, rgba=[1, 0.8, 0.8, 1]) {
-    if (y < 0 && x === 0 && z === 0) {
-      x = 0.0000000000000001; // prevent parallel vectors
-    }
-    this.x = x; this.y = y; this.z = z;
-    this.m = Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2) + Math.pow(this.z, 2));
+    this.update(x, y, z);
     this.vert = vecData.pos;
     this.normal = vecData.norm;
     this.posOrder = vecData.posOrder;
@@ -189,7 +182,7 @@ precision mediump float;
 //const vec3 lightPos = vec3(0.0, 0.0, -10.0);
 const vec3 lightColor = vec3(1.0, 1.0, 1.0);
 const vec3 specColor = vec3(1.0, 1.0, 1.0);
-const float lightPower = 30.0;
+const float lightPower = 200.0;
 const float shininess = 70.0;
 const float screenGamma = 2.2;
 
@@ -200,8 +193,8 @@ varying vec3 vert;
 varying vec3 normalInterp;
 
 void main() {
-  vec3 lightPos = normalize(cam) * 5.0;
-  vec3 diffuseColor =  color.rgb, ambientColor = diffuseColor / 20.0;
+  vec3 lightPos = normalize(cam) * 20.0;
+  vec3 diffuseColor =  color.rgb, ambientColor = diffuseColor / 10.0;
   vec3 normal = normalize(normalInterp);
   vec3 colorGammaCorrected = vec3(0.0);
 
@@ -252,6 +245,24 @@ void main() {
     this.nor = gl.getAttribLocation(this.program, 'nor');
   }
 
+  update(x, y, z) {
+    if (y < 0 && x === 0 && z === 0) {
+      x = 0.0000000000000001; // prevent parallel vectors
+    }
+    this.x = x; this.y = y; this.z = z;
+    this.m = Math.sqrt(Math.pow(this.x, 2) + Math.pow(this.y, 2) + Math.pow(this.z, 2));
+  }
+
+  updateX(x) {
+    this.update(x, this.y, this.z);
+  }
+  updateY(y) {
+    this.update(this.x, y, this.z);
+  }
+  updateZ(z) {
+    this.update(this.x, this.y, z);
+  }
+
   draw(data) {
     gl.useProgram(this.program);
 
@@ -286,3 +297,37 @@ function loadShader(gl, type, source) {
   console.error(gl.getShaderInfoLog(shader));
   gl.deleteShader(shader);
 }
+
+let bool = true;
+function openList() {
+  if (bool) {
+    list.style.left = "-220px";
+    o.innerText = ">>";
+    bool = false;
+  } else {
+    list.style.left = "0px";
+    o.innerText = "<<";
+    bool = true;
+  }
+}
+
+const dom = new DOMParser()
+function addVec() {
+  const xyz = [(Math.random() * 2 - 1).toFixed(2),  (Math.random() * 2 - 1).toFixed(2), (Math.random() * 2 - 1).toFixed(2)];
+  v.push(new Vector(xyz[0], xyz[1], xyz[2], [Math.random(), Math.random(), Math.random(), 1]));
+  vecs.appendChild(dom.parseFromString(`
+        <div class="vec">
+          <input type="number" value="${xyz[0]}" oninput="editVecX(${v.length -1}, event.target)" />
+          <input type="number" value="${xyz[1]}" oninput="editVecY(${v.length -1}, event.target)" />
+          <input type="number" value="${xyz[2]}" oninput="editVecZ(${v.length -1}, event.target)" />
+        </div>`, 'text/html').getElementsByClassName('vec')[0]);
+}
+function editVecX(i, x) {
+  v[i].updateX(parseFloat(x.value));
+} 
+function editVecY(i, y) {
+  v[i].updateY(parseFloat(y.value));
+} 
+function editVecZ(i, z) {
+  v[i].updateZ(parseFloat(z.value));
+} 

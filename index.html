@@ -11,9 +11,22 @@
 	<title>Physics visualizer</title>
 </head>
 <body onload="init()">
-  <div class="content">
-    <span id="fps"></span>
-    <canvas id="id" width="100" height="50"></canvas>
+  <div class="container">
+    <div id="list" onwheel="event.stopPropagation()">
+      <div class="actions">
+        <button id="o" onclick="openList()">&lt;&lt;</button>
+        <button onclick="addVec()">+</button>
+      </div>
+      <div class="wrapper">
+        <div class="scroll">
+          <div id="vecs"></div>
+        </div>
+      </div>
+    </div>
+    <div class="content">
+      <span id="fps"></span>
+      <canvas id="id" width="100" height="50"></canvas>
+    </div>
   </div>
 </body>
 </html>

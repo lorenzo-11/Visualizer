@@ -4,6 +4,48 @@ html, body {
   background-color: black;
   color: white;
 }
+div.container {
+  
+}
+div#list {
+  position: absolute;
+  left: 0;
+  top: 0;
+  background-color: white;
+  width: 220px;
+  height: 100vh;
+  z-index: 2;
+  transition: 0.5s left ease-out;
+  display: flex;
+  flex-direction: column;
+}
+div.actions {
+  height: 20px;
+}
+button#o {
+  position: absolute;
+  left: 220px;
+  top: 0;
+  background-color: rgba(0, 50, 0, 0.5);
+  border: none;
+  outline: none;
+  color: white;
+  font-weight: bold;
+  font-family: monospace;
+  font-size: 13pt;
+}
+div.wrapper {
+  display: flex;
+  min-height: 0;
+}
+div.scroll {
+  flex: 1;
+  overflow-y: auto;
+}
+div.vec input {
+  float: left;
+  width: 62px;
+}
 div.content canvas {
   display: block;
 }
