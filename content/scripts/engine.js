@@ -174,7 +174,6 @@ void main() {
   gl_Position = model * pos;
   normalInterp = vec3(normal * vec4(nor, 0.0));
   vert = (world * pos).xyz;
-  gl_PointSize = 2.0;
 }
 `));
     gl.attachShader(this.program, loadShader(gl, gl.FRAGMENT_SHADER, `
@@ -182,7 +181,7 @@ precision mediump float;
 //const vec3 lightPos = vec3(0.0, 0.0, -10.0);
 const vec3 lightColor = vec3(1.0, 1.0, 1.0);
 const vec3 specColor = vec3(1.0, 1.0, 1.0);
-const float lightPower = 200.0;
+const float lightPower = 250.0;
 const float shininess = 70.0;
 const float screenGamma = 2.2;
 
